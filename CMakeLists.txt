@@ -27,6 +27,8 @@ endif()
 # Name the target the same as your CLion run configuration if you want
 add_executable(Iron_Tide WIN32
         main.cpp
+        car.h
+        Car.cpp
 )
 
 # SDL3::SDL3 already carries include dirs, so this is enough:
