@@ -3,6 +3,7 @@
 //
 
 #include <SDL3/SDL.h>
+#include <enet.h>
 #include "Car.h"
 #include <cmath>
 
@@ -15,20 +16,20 @@ Car::Car(int *win_x, int *win_y, const float x, const float y)
 Car::Car(int *win_x, int *win_y)
     : window_x(win_x), window_y(win_y) {}
 
-int Car::update(double delta)
+int Car::update(const double delta)
 {
     // Move based on current speed and direction
-    pos_x += std::sin(dir) * speed * delta;
-    pos_y -= std::cos(dir) * speed * delta; // minus because y increases downward in SDL
+    pos_x += std::sin(dir) * speed * static_cast<float>(delta);
+    pos_y -= std::cos(dir) * speed * static_cast<float>(delta); // minus because y increases downward in SDL
 
     // Apply friction
-    speed *= 0.98f;
+    speed *= 0.9999f;
 
     // Clamp position inside window bounds
     if (pos_x < car_size) pos_x = car_size;
     if (pos_y < car_size) pos_y = car_size;
-    if (pos_x > *window_x - car_size) pos_x = *window_x - car_size;
-    if (pos_y > *window_y - car_size) pos_y = *window_y - car_size;
+    if (pos_x > static_cast<float>(*window_x) - car_size) pos_x = static_cast<float>(*window_x) - car_size;
+    if (pos_y > static_cast<float>(*window_y) - car_size) pos_y = static_cast<float>(*window_y) - car_size;
 
     return 0;
 }
@@ -47,14 +48,14 @@ int Car::left_turn()
 
 int Car::accelerate()
 {
-    speed += car_power * 0.016f;
+    speed += car_power * 0.00016f;
     if (speed > max_speed) speed = max_speed;
     return 0;
 }
 
 int Car::decelerate()
 {
-    speed -= car_power;
+    speed -= car_power * 0.00016f;
     if (speed < -max_speed / 4.0f) speed = -max_speed / 4.0f; // limit reverse speed
     return 0;
 }
