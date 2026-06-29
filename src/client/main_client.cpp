@@ -1,11 +1,13 @@
 #include <cmath>
 #include <cstdio>
+#include <thread>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <cmath>
 
 #include "Car.h"
+#include "ClientCommunicator.h"
+#include "../shared/ecs/components.h"
 
 #define WINDOW_WIDTH 1600
 #define WINDOW_HEIGHT 900
@@ -16,12 +18,16 @@ static SDL_Renderer* renderer = NULL;
 
 int win_w = WINDOW_WIDTH;
 int win_h = WINDOW_HEIGHT;
-auto car = Car(&win_w, &win_h, 600.0f, 600.0f);
 
 bool key_w = false;
 bool key_s = false;
 bool key_a = false;
 bool key_d = false;
+
+std::mutex m;
+std::jthread connection;
+
+
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char* argv[])
 {
@@ -37,6 +43,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char* argv[])
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Couldn't create window/renderer!", SDL_GetError(), NULL);
         return SDL_APP_FAILURE;
     }
+
+    connection = std::jthread(&ClientCommunicator::connect_to_server);
 
     // return success!
     return SDL_APP_CONTINUE;
@@ -85,12 +93,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 // This function runs once per frame, and is the heart of the program
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    static Uint64 last_time = 0;
-    static Uint64 frame_count = 0;
+    static double last_time = 0;
+    static double frame_count = 0;
     static double fps_timer = 0.0;
     static char title[128];
 
-    const Uint64 now = SDL_GetPerformanceCounter();
+    const auto now = static_cast<double>(SDL_GetPerformanceCounter());
 
     // Initialize last_time on first frame
     if (last_time == 0)
@@ -120,6 +128,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     SDL_SetRenderDrawColor(renderer, 255, 0, 255, 0);
     SDL_RenderFillRect(renderer, &rect);
 
+    /*
     // Car controls
     if (key_w) car.accelerate();
     if (key_s) car.decelerate();
@@ -128,6 +137,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     car.update(delta);
     car.draw_car(renderer);
+    */
 
     SDL_RenderPresent(renderer);
 
@@ -139,4 +149,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     // SDL will clean up the window/renderer for us.
+    connection.request_stop();
+    if (connection.joinable()) {
+        connection.join();
+    }
 }
